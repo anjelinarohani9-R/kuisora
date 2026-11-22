@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ACHIEVQUIZ - Quiz SMA Pink Pastel & Game Seru</title>
+  <!-- Tailwind CSS untuk tata letak responsif dan komponen utilitas -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Google Inter & Fredoka -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tone.js untuk efek suara sintetis -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- PeerJS untuk koneksi Live Class Arena -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <!-- FontAwesome untuk ikon antarmuka -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- PDF.js untuk ekstraksi teks file PDF pada Gemini AI Studio -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Hubungkan stylesheet CSS kustom -->
+  <link rel="stylesheet" href="achievquiz_style.css" />
+
+  <meta name="theme-color" content="#FFB6C1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="ACHIEVQUIZ" />
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-pink-200">
+
+  <!-- ==================== NOTIFIKASI TOAST & MODAL KONFIRMASI ==================== -->
+  <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-md pointer-events-none flex flex-col gap-2"></div>
+
+  <div id="custom-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-2 border-pink-200">
+      <div class="text-center">
+        <div class="w-14 h-14 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+          <i class="fas fa-heart"></i>
+        </div>
+        <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-2">Judul Modal</h3>
+        <p id="modal-message" class="text-sm text-gray-600 mb-6">Pesan konfirmasi di sini.</p>
+        <div id="modal-input-container" class="hidden mb-4">
+          <input type="text" id="modal-input" class="w-full px-4 py-3 rounded-2xl border-2 border-pink-200 focus:border-pink-400 focus:outline-none text-sm" placeholder="Ketik di sini...">
+        </div>
+        <div class="flex gap-3 justify-center">
+          <button id="modal-cancel-btn" class="flex-1 py-3 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition">Batal</button>
+          <button id="modal-confirm-btn" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-semibold text-sm shadow-md transition">Ya, Lanjut</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HEADER APLIKASI ==================== -->
+  <header id="app-header" class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-pink-100 px-4 py-3 shadow-sm">
+    <div class="max-w-3xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2.5 cursor-pointer" onclick="navigateTo('home')">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-300 flex items-center justify-center text-white shadow-md">
+          <i class="fas fa-trophy text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent leading-tight tracking-wide">ACHIEVQUIZ</h1>
+          <p class="text-[11px] text-pink-400 font-medium">SMA Kelas 10, 11, 12 • Offline</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-full flex items-center gap-1.5" title="Streak Belajar Harian">
+          <i class="fas fa-fire text-orange-500 text-sm animate-pulse"></i>
+          <span id="streak-count" class="text-xs font-bold text-orange-600">1 Hari</span>
+        </div>
+        <button id="user-profile-pill" onclick="openAccountModal()" class="hidden px-3 py-1.5 rounded-full bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-600 text-xs font-bold items-center gap-1.5 transition" title="Info Akun & Ganti Akun">
+          <i id="user-role-icon" class="fas fa-user-graduate"></i>
+          <span id="user-name-display" class="max-w-[85px] truncate">Siswa</span>
+        </button>
+        <button id="sound-toggle-btn" onclick="toggleSound()" class="w-9 h-9 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-500 flex items-center justify-center transition" title="Suara Efek">
+          <i id="sound-icon" class="fas fa-volume-up text-sm"></i>
+        </button>
+        <button id="install-pwa-btn" onclick="installPWA()" class="hidden px-3 py-1.5 rounded-full bg-pink-500 text-white text-xs font-semibold shadow-sm hover:bg-pink-600 transition items-center gap-1">
+          <i class="fas fa-download"></i> <span>Install App</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== KONTEN UTAMA (SINGLE PAGE VIEWS) ==================== -->
+  <main class="flex-grow max-w-3xl w-full mx-auto p-4 pb-24">
+
+    <!-- Halaman Login & Daftar Akun -->
+    <section id="view-auth" class="space-y-5 pt-4">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border-2 border-pink-200 max-w-md mx-auto space-y-5">
+        <div class="text-center space-y-2">
+          <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-pink-500 to-rose-300 flex items-center justify-center text-white text-3xl mx-auto shadow-md">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <h2 class="text-2xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Selamat Datang di ACHIEVQUIZ</h2>
+          <p class="text-xs text-gray-500">Pilih peran dan masuk dengan akunmu (tersimpan offline di HP)</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 p-1 bg-pink-50 rounded-2xl border border-pink-100">
+          <button id="auth-tab-login" onclick="switchAuthTab('login')" class="py-2 rounded-xl bg-white text-pink-600 font-bold text-xs shadow-sm transition">Masuk Akun</button>
+          <button id="auth-tab-register" onclick="switchAuthTab('register')" class="py-2 rounded-xl text-gray-500 font-bold text-xs transition">Daftar Baru</button>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-2">Masuk Sebagai:</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" id="role-btn-siswa" onclick="selectAuthRole('siswa')" class="p-3 rounded-2xl border-2 border-pink-500 bg-pink-50 text-pink-700 font-bold text-xs flex flex-col items-center gap-1.5 transition">
+              <i class="fas fa-user-graduate text-xl"></i>
+              <span>Siswa SMA</span>
+            </button>
+            <button type="button" id="role-btn-guru" onclick="selectAuthRole('guru')" class="p-3 rounded-2xl border-2 border-pink-100 bg-white text-gray-500 font-bold text-xs flex flex-col items-center gap-1.5 transition">
+              <i class="fas fa-chalkboard-teacher text-xl"></i>
+              <span>Guru SMA</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div id="auth-fullname-group" class="hidden">
+            <label class="block text-xs font-bold text-gray-700 mb-1">Nama Lengkap & Kelas / Mapel</label>
+            <input type="text" id="auth-fullname" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border border-pink-200 text-sm focus:outline-none focus:border-pink-400" placeholder="Contoh: Alya Putri - XI IPA 1">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Username</label>
+            <input type="text" id="auth-username" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border border-pink-200 text-sm focus:outline-none focus:border-pink-400" placeholder="Masukkan username...">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Kata Sandi / PIN</label>
+            <input type="password" id="auth-password" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border border-pink-200 text-sm focus:outline-none focus:border-pink-400" placeholder="Masukkan kata sandi...">
+          </div>
+        </div>
+
+        <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 text-white font-bold text-sm shadow-md transition">
+          Masuk Sekarang
+        </button>
+
+        <div id="saved-accounts-box" class="hidden pt-2 border-t border-pink-100 space-y-2">
+          <p class="text-[11px] font-bold text-gray-400 text-center">Akun Tersimpan di HP Ini (Ketuk untuk Masuk Cepat):</p>
+          <div id="saved-accounts-list" class="flex flex-wrap justify-center gap-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Halaman Beranda -->
+    <section id="view-home" class="hidden space-y-6">
+      <div class="bg-gradient-to-br from-pink-400 via-rose-400 to-pink-500 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
+        <div class="relative z-10 max-w-md space-y-2">
+          <span id="home-role-badge" class="inline-block px-3 py-1 bg-white/25 backdrop-blur-sm rounded-full text-xs font-semibold">🎓 Mode Siswa</span>
+          <h2 id="home-welcome-title" class="text-2xl sm:text-3xl font-bold leading-snug">Semangat Belajar!</h2>
+          <p id="home-welcome-desc" class="text-xs sm:text-sm text-pink-50">Kerjakan Ulangan Harian, belajar dari file PDF dengan AI, atau mainkan 6 game seru bareng teman!</p>
+          <div class="pt-3 flex flex-wrap gap-2">
+            <button onclick="navigateTo('ai-generator')" class="bg-white text-pink-600 hover:bg-pink-50 font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm transition flex items-center gap-1.5">
+              <i class="fas fa-wand-magic-sparkles"></i> Gemini AI Studio
+            </button>
+            <button id="home-studio-btn" onclick="navigateTo('teacher-studio')" class="bg-pink-700/40 hover:bg-pink-700/60 border border-white/40 text-white font-bold text-xs px-4 py-2.5 rounded-2xl transition flex items-center gap-1.5">
+              <i class="fas fa-plus-circle"></i> Studio Guru
+            </button>
+          </div>
+        </div>
+        <i class="fas fa-graduation-cap text-8xl text-white/15 absolute -right-4 -bottom-4 transform -rotate-12"></i>
+      </div>
+
+      <!-- Mode Belajar & Ulangan -->
+      <div class="space-y-3">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-book-open text-pink-500"></i> Mode Belajar & Ujian
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div onclick="openDeckSelector('uh')" class="bg-white p-4 rounded-3xl border-2 border-pink-100 hover:border-pink-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-center gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-500 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-file-signature"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-gray-800">Ulangan Harian (UH)</h4>
+                <span class="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-bold">Sertifikat</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-0.5">Soal acak, timer ujian dari guru, dan unduh bukti nilai.</p>
+            </div>
+          </div>
+
+          <div onclick="openDeckSelector('flashcard')" class="bg-white p-4 rounded-3xl border-2 border-pink-100 hover:border-pink-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-center gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-teal-100 text-teal-500 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-gray-800">Flashcard Hafalan</h4>
+                <span class="text-[10px] bg-teal-100 text-teal-600 px-2 py-0.5 rounded-full font-bold">Mandiri</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-0.5">Kartu bolak-balik 3D untuk menghafal rumus & konsep SMA.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arcade & Game Kuis Kelas -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <i class="fas fa-gamepad text-pink-500"></i> Arcade & Game Kuis Kelas
+            </h3>
+            <p class="text-xs text-gray-500">Pilih mode bermain bersama teman atau tantangan arcade offline</p>
+          </div>
+          <span class="text-[11px] bg-pink-100 text-pink-600 px-3 py-1 rounded-full font-bold shrink-0">6 Game Seru</span>
+        </div>
+
+        <div onclick="navigateTo('live-lobby')" class="bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-400 p-5 rounded-3xl text-white shadow-md hover:shadow-lg transition cursor-pointer relative overflow-hidden group">
+          <div class="flex items-start sm:items-center justify-between gap-4 relative z-10">
+            <div class="flex items-start sm:items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+                <i class="fas fa-tower-broadcast animate-pulse"></i>
+              </div>
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h4 class="font-bold text-base sm:text-lg">Live Class Arena (Ala Quizizz)</h4>
+                  <span class="text-[10px] bg-yellow-300 text-pink-900 px-2.5 py-0.5 rounded-full font-extrabold uppercase">1 Kelas Serentak</span>
+                </div>
+                <p class="text-xs text-pink-50 leading-relaxed">Guru membuat <b>6 digit PIN Ruangan</b>, seluruh siswa masuk dari HP masing-masing dan berlomba di <b>Live Leaderboard</b>!</p>
+              </div>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 self-center">
+              <i class="fas fa-chevron-right text-white"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daftar 6 Mode Game -->
+        <div class="space-y-3">
+          <div onclick="openDeckSelector('tugofwar')" class="bg-white p-4 sm:p-5 rounded-3xl border-2 border-pink-100 hover:border-rose-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-500 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-people-pulling"></i>
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="font-bold text-gray-800 text-base">1. Tarik Tambang (Tug of War)</h4>
+                <span class="text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 px-2.5 py-0.5 rounded-full">⚔️ 1 vs 1 (1 HP)</span>
+              </div>
+              <p class="text-xs text-gray-600 leading-relaxed">Layar HP terbelah dua saling berhadapan! Jawab soal lebih cepat dan tepat dari lawanmu untuk menarik <b>pita merah</b> melewati garis batas wilayah.</p>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-[11px] font-semibold text-rose-500"><i class="fas fa-wifi-slash mr-1"></i>100% Offline • Duel Meja</span>
+                <span class="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition">Mainkan <i class="fas fa-arrow-right ml-1"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="openDeckSelector('impostor')" class="bg-white p-4 sm:p-5 rounded-3xl border-2 border-pink-100 hover:border-purple-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-user-secret"></i>
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="font-bold text-gray-800 text-base">2. Who is the Impostor?</h4>
+                <span class="text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-200 px-2.5 py-0.5 rounded-full">🕵️ 4–8 Siswa (Pass & Play)</span>
+              </div>
+              <p class="text-xs text-gray-600 leading-relaxed">Permainan detektif ala <i>Among Us</i>! <b>Crewmate</b> melihat soal asli, sedangkan 1 <b>Impostor</b> rahasia tidak melihat soal dan harus menyamar saat diskusi & voting.</p>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-[11px] font-semibold text-purple-600"><i class="fas fa-comments mr-1"></i>Diskusi Kelompok & Voting</span>
+                <span class="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition">Mainkan <i class="fas fa-arrow-right ml-1"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="openDeckSelector('tower')" class="bg-white p-4 sm:p-5 rounded-3xl border-2 border-pink-100 hover:border-indigo-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-500 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-chess-rook"></i>
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="font-bold text-gray-800 text-base">3. Jaga Benteng (Tower Defense)</h4>
+                <span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-0.5 rounded-full">🏰 Strategi Solo / Co-op</span>
+              </div>
+              <p class="text-xs text-gray-600 leading-relaxed">Pasukan <b>Monster Malas</b> & <b>Hantu Remedial</b> berjalan menyerbu benteng sekolah. Setiap jawaban benar menembakkan <b>Meriam Pelangi</b> untuk mempertahankan benteng!</p>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-[11px] font-semibold text-indigo-600"><i class="fas fa-shield-halved mr-1"></i>3 Nyawa Benteng • Gelombang Soal</span>
+                <span class="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition">Mainkan <i class="fas fa-arrow-right ml-1"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="openDeckSelector('spindare')" class="bg-white p-4 sm:p-5 rounded-3xl border-2 border-pink-100 hover:border-amber-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-dharmachakra"></i>
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="font-bold text-gray-800 text-base">4. Spin & Dare (Roda Keberuntungan)</h4>
+                <span class="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full">🎡 Ice Breaking Kelas</span>
+              </div>
+              <p class="text-xs text-gray-600 leading-relaxed">Putar roda keberuntungan sebelum menjawab soal! Dapatkan efek acak seru: <b>Poin x2</b>, <b>Tukar Skor</b> dengan teman, <b>Bom -50</b>, atau <b>Tantangan Nyanyi/Pantun</b>.</p>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-[11px] font-semibold text-amber-600"><i class="fas fa-users mr-1"></i>2–8 Pemain Bergantian</span>
+                <span class="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition">Mainkan <i class="fas fa-arrow-right ml-1"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="openDeckSelector('sakura')" class="bg-white p-4 sm:p-5 rounded-3xl border-2 border-pink-100 hover:border-pink-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-pink-100 text-pink-500 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-spa"></i>
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="font-bold text-gray-800 text-base">5. Tebak Kata Bunga Sakura</h4>
+                <span class="text-[10px] font-bold bg-pink-50 text-pink-600 border border-pink-200 px-2.5 py-0.5 rounded-full">🌸 Tebak Istilah A–Z</span>
+              </div>
+              <p class="text-xs text-gray-600 leading-relaxed">Susun huruf demi huruf kata kunci jawaban berdasarkan petunjuk soal. Hati-hati, setiap huruf yang salah akan menggugurkan 1 dari <b>6 kelopak bunga sakura</b>!</p>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-[11px] font-semibold text-pink-500"><i class="fas fa-spell-check mr-1"></i>Cocok untuk Hafalan Istilah SMA</span>
+                <span class="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition">Mainkan <i class="fas fa-arrow-right ml-1"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="openDeckSelector('runner')" class="bg-white p-4 sm:p-5 rounded-3xl border-2 border-pink-100 hover:border-emerald-400 shadow-sm hover:shadow-md transition cursor-pointer flex items-start gap-4 group">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-500 flex items-center justify-center text-2xl group-hover:scale-110 transition shrink-0">
+              <i class="fas fa-person-running"></i>
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="font-bold text-gray-800 text-base">6. Quiz Runner (Lompat 4 Jalur)</h4>
+                <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full">🐰 Arcade Refleks Cepat</span>
+              </div>
+              <p class="text-xs text-gray-600 leading-relaxed">Kendalikan kelinci pelari melewati 4 lintasan gerbang jawaban (<b>Jalur A, B, C, D</b>). Ketuk jalur jawaban yang benar sebelum gerbang rintangan menabrakmu!</p>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-[11px] font-semibold text-emerald-600"><i class="fas fa-bolt mr-1"></i>3 Nyawa • Kecepatan & Ketepatan</span>
+                <span class="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition">Mainkan <i class="fas fa-arrow-right ml-1"></i></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Koleksi Paket Soal -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-folder-open text-pink-500"></i> Bank Soal Tersimpan (<span id="total-decks-count">0</span>)
+          </h3>
+          <button onclick="openImportModal()" class="text-xs bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold px-3 py-1.5 rounded-full transition flex items-center gap-1">
+            <i class="fas fa-file-import"></i> Import Kode Soal
+          </button>
+        </div>
+        <div id="deck-list-container" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- Halaman Gemini AI Studio -->
+    <section id="view-ai-generator" class="hidden space-y-5">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <button onclick="navigateTo('home')" class="w-10 h-10 rounded-2xl bg-white border border-pink-200 text-pink-500 flex items-center justify-center shadow-sm hover:bg-pink-50">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-1.5">Gemini AI Studio <span class="text-xs bg-gradient-to-r from-blue-500 to-pink-500 text-white px-2.5 py-0.5 rounded-full">Gemini</span></h2>
+            <p class="text-xs text-gray-500">Pembuat soal HOTS & asisten tanya jawab belajar SMA</p>
+          </div>
+        </div>
+        <button onclick="openGeminiKeyModal()" class="px-3 py-2 rounded-2xl bg-white border border-pink-200 hover:bg-pink-50 text-pink-600 text-xs font-bold shadow-sm flex items-center gap-1.5 transition" title="Atur Gemini API Key">
+          <i class="fas fa-key"></i> <span id="gemini-key-badge">API Key</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 p-1.5 bg-white rounded-2xl border border-pink-100 shadow-sm">
+        <button id="ai-tab-quiz" onclick="switchGeminiTab('quiz')" class="py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5">
+          <i class="fas fa-file-circle-question"></i> Buat Paket Soal AI
+        </button>
+        <button id="ai-tab-chat" onclick="switchGeminiTab('chat')" class="py-2.5 rounded-xl text-gray-500 hover:text-pink-600 font-bold text-xs transition flex items-center justify-center gap-1.5">
+          <i class="fas fa-comments"></i> Tanya & Diskusi Gemini
+        </button>
+      </div>
+
+      <div id="ai-panel-quiz" class="bg-white rounded-3xl p-6 shadow-sm border border-pink-100 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Tingkat Kelas</label>
+            <select id="ai-grade" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border-2 border-pink-100 focus:border-pink-400 focus:outline-none text-sm font-medium">
+              <option value="SMA Kelas 10">SMA Kelas 10</option>
+              <option value="SMA Kelas 11" selected>SMA Kelas 11</option>
+              <option value="SMA Kelas 12">SMA Kelas 12</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Mata Pelajaran</label>
+            <select id="ai-subject" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border-2 border-pink-100 focus:border-pink-400 focus:outline-none text-sm font-medium">
+              <option value="Informatika">Informatika</option>
+              <option value="Biologi">Biologi</option>
+              <option value="Fisika">Fisika</option>
+              <option value="Kimia">Kimia</option>
+              <option value="Matematika">Matematika</option>
+              <option value="Sejarah Indonesia">Sejarah Indonesia</option>
+              <option value="Bahasa Inggris">Bahasa Inggris</option>
+              <option value="Ekonomi">Ekonomi</option>
+              <option value="Sosiologi">Sosiologi</option>
+              <option value="Geografi">Geografi</option>
+              <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Materi / Bab Pembelajaran</label>
+          <input type="text" id="ai-topic" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border-2 border-pink-100 focus:border-pink-400 focus:outline-none text-sm" placeholder="Contoh: Algoritma & Pemrograman, Jaringan Komputer, Struktur Sel...">
+        </div>
+
+        <div class="p-4 rounded-2xl bg-pink-50/70 border-2 border-dashed border-pink-300 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-pink-700 flex items-center gap-1.5">
+              <i class="fas fa-file-pdf text-rose-500 text-sm"></i> Unggah File Materi PDF / TXT (Opsional)
+            </label>
+            <button type="button" id="ai-clear-file-btn" onclick="clearAIMaterialFile()" class="hidden text-[11px] text-rose-500 font-bold hover:underline">Hapus File</button>
+          </div>
+          <p class="text-[11px] text-gray-500">AI akan membuat soal khusus dari isi file materi yang kamu unggah agar tidak keluar topik.</p>
+          <input type="file" id="ai-material-file" accept=".pdf,.txt,.md,.csv" onchange="handleAIMaterialUpload(event)" class="block w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-pink-500 file:text-white hover:file:bg-pink-600 cursor-pointer">
+          <p id="ai-file-status" class="hidden text-[11px] font-semibold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200"></p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Jumlah Soal (Custom)</label>
+            <input type="number" id="ai-count" value="5" min="1" max="50" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border-2 border-pink-100 focus:border-pink-400 focus:outline-none text-sm font-bold text-pink-600" placeholder="Misal: 10">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Tingkat Kesulitan</label>
+            <select id="ai-difficulty" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border-2 border-pink-100 focus:border-pink-400 focus:outline-none text-sm font-medium">
+              <option value="Mudah">Mudah</option>
+              <option value="Sedang" selected>Sedang (UH)</option>
+              <option value="Sulit">Sulit (HOTS)</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="btn-generate-ai" onclick="generateAIQuiz()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-indigo-500 hover:opacity-95 text-white font-bold text-sm shadow-lg transition flex items-center justify-center gap-2">
+          <i class="fas fa-sparkles"></i> <span>Buat Soal Cerdas dengan Gemini AI</span>
+        </button>
+
+        <div id="ai-loading" class="hidden text-center py-6 space-y-3">
+          <div class="w-12 h-12 border-4 border-pink-200 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
+          <p class="text-sm font-semibold text-pink-600">Gemini AI sedang membaca materi dan menyusun soal HOTS untukmu...</p>
+        </div>
+      </div>
+
+      <div id="ai-panel-chat" class="hidden bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
+        <div class="flex items-center justify-between border-b border-pink-100 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-500 to-pink-500 text-white flex items-center justify-center text-sm shadow-sm">
+              <i class="fas fa-sparkles"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-gray-800">Tutor Belajar Gemini AI</h3>
+              <p class="text-[11px] text-gray-400">Tanya materi, rumus, rangkuman PDF, atau pemecahan soal</p>
+            </div>
+          </div>
+          <button onclick="clearGeminiChat()" class="text-[11px] text-rose-500 hover:underline font-semibold">Reset Chat</button>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5">
+          <button onclick="useQuickPrompt('Jelaskan konsep dasar dan contoh soal Informatika SMA tentang Algoritma')" class="text-[11px] bg-pink-50 hover:bg-pink-100 text-pink-700 px-3 py-1.5 rounded-full font-medium transition">💡 Konsep Algoritma</button>
+          <button onclick="useQuickPrompt('Ringkas poin-poin penting dari materi PDF yang sudah saya unggah')" class="text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full font-medium transition">📄 Ringkas File PDF</button>
+          <button onclick="useQuickPrompt('Buatkan 1 contoh soal studi kasus Fisika SMA beserta pemecahan masalah langkah demi langkah')" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1.5 rounded-full font-medium transition">🧮 Contoh Pemecahan Masalah</button>
+        </div>
+
+        <div id="gemini-chat-messages" class="space-y-3 max-h-80 overflow-y-auto p-3 rounded-2xl bg-pink-50/40 border border-pink-100">
+          <div class="flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-pink-500 text-white flex items-center justify-center text-xs shrink-0 mt-0.5">
+              <i class="fas fa-sparkles"></i>
+            </div>
+            <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-pink-100 shadow-sm text-xs text-gray-700 leading-relaxed">
+              Halo! Saya <b>Gemini AI</b>. Kamu bisa bertanya apa saja seputar pelajaran SMA, meminta saya menjelaskan rumus langkah demi langkah, atau mendiskusikan isi file PDF yang kamu unggah! ✨
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="text" id="gemini-chat-input" onkeydown="if(event.key==='Enter') sendGeminiChat()" class="flex-1 px-4 py-3 rounded-2xl bg-pink-50/50 border-2 border-pink-100 focus:border-pink-400 focus:outline-none text-xs sm:text-sm" placeholder="Ketik pertanyaan atau soal yang ingin dipecahkan...">
+          <button id="gemini-chat-send-btn" onclick="sendGeminiChat()" class="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-pink-500 hover:opacity-95 text-white flex items-center justify-center shadow-md shrink-0 transition">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Halaman Studio Guru -->
+    <section id="view-teacher-studio" class="hidden space-y-5">
+      <div class="flex items-center gap-3">
+        <button onclick="navigateTo('home')" class="w-10 h-10 rounded-2xl bg-white border border-pink-200 text-pink-500 flex items-center justify-center shadow-sm hover:bg-pink-50">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">Studio Guru & Mandiri</h2>
+          <p class="text-xs text-gray-500">Buat soal sesuai mapel, tambahkan gambar & bagikan ke siswa</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Judul Ujian / Paket Soal</label>
+            <input type="text" id="studio-title" class="w-full px-4 py-2.5 rounded-2xl bg-pink-50/50 border border-pink-200 focus:border-pink-400 focus:outline-none text-sm" placeholder="Contoh: UH 1 Biologi Sel">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Mata Pelajaran & Kelas</label>
+            <input type="text" id="studio-subject" class="w-full px-4 py-2.5 rounded-2xl bg-pink-50/50 border border-pink-200 focus:border-pink-400 focus:outline-none text-sm" placeholder="Contoh: Biologi - Kelas 11">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Nama Guru / Pembuat</label>
+            <input type="text" id="studio-author" class="w-full px-4 py-2.5 rounded-2xl bg-pink-50/50 border border-pink-200 focus:border-pink-400 focus:outline-none text-sm" placeholder="Contoh: Bu Rina">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Durasi UH (Menit)</label>
+            <input type="number" id="studio-duration" value="15" min="1" max="120" class="w-full px-4 py-2.5 rounded-2xl bg-pink-50/50 border border-pink-200 focus:border-pink-400 focus:outline-none text-sm">
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
+        <h3 class="font-bold text-gray-800 text-sm"><i class="fas fa-pen-to-square text-pink-500 mr-1"></i> Tambah Pertanyaan & Gambar</h3>
+        <textarea id="q-text" rows="2" class="w-full px-4 py-3 rounded-2xl bg-pink-50/50 border border-pink-200 focus:border-pink-400 focus:outline-none text-sm" placeholder="Tulis pertanyaan di sini..."></textarea>
+
+        <div class="p-3 rounded-2xl bg-pink-50/60 border border-dashed border-pink-300 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-pink-700 flex items-center gap-1.5 cursor-pointer">
+              <i class="fas fa-image text-pink-500"></i>
+              <span>Tambah Gambar Soal (Opsional)</span>
+              <input type="file" id="q-image-input" accept="image/*" onchange="handleStudioImageUpload(event, 'question')" class="hidden">
+            </label>
+            <button type="button" id="q-image-clear" onclick="clearStudioImage('question')" class="hidden text-[11px] text-rose-500 font-bold hover:underline">Hapus Gambar</button>
+          </div>
+          <div id="q-image-preview-box" class="hidden">
+            <img id="q-image-preview" src="" alt="Preview Soal" class="max-h-36 rounded-xl border border-pink-200 object-contain mx-auto bg-white p-1">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="space-y-1.5 p-2.5 rounded-2xl border border-pink-100 bg-pink-50/20">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-full bg-pink-100 text-pink-600 font-bold text-xs flex items-center justify-center shrink-0">A</span>
+              <input type="text" id="q-opt-0" class="w-full px-3 py-2 rounded-xl border border-pink-200 text-sm focus:outline-none focus:border-pink-400 bg-white" placeholder="Pilihan A">
+              <label class="w-8 h-8 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-600 flex items-center justify-center cursor-pointer shrink-0" title="Gambar Jawaban A">
+                <i class="fas fa-camera text-xs"></i>
+                <input type="file" id="q-opt-img-input-0" accept="image/*" onchange="handleStudioImageUpload(event, 0)" class="hidden">
+              </label>
+            </div>
+            <div id="q-opt-img-box-0" class="hidden flex items-center justify-between bg-white p-1.5 rounded-xl border border-pink-100">
+              <img id="q-opt-img-prev-0" src="" class="h-12 rounded-lg object-contain">
+              <button type="button" onclick="clearStudioImage(0)" class="text-[11px] text-rose-500 font-bold px-2">Hapus</button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 p-2.5 rounded-2xl border border-pink-100 bg-pink-50/20">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-full bg-pink-100 text-pink-600 font-bold text-xs flex items-center justify-center shrink-0">B</span>
+              <input type="text" id="q-opt-1" class="w-full px-3 py-2 rounded-xl border border-pink-200 text-sm focus:outline-none focus:border-pink-400 bg-white" placeholder="Pilihan B">
+              <label class="w-8 h-8 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-600 flex items-center justify-center cursor-pointer shrink-0" title="Gambar Jawaban B">
+                <i class="fas fa-camera text-xs"></i>
+                <input type="file" id="q-opt-img-input-1" accept="image/*" onchange="handleStudioImageUpload(event, 1)" class="hidden">
+              </label>
+            </div>
+            <div id="q-opt-img-box-1" class="hidden flex items-center justify-between bg-white p-1.5 rounded-xl border border-pink-100">
+              <img id="q-opt-img-prev-1" src="" class="h-12 rounded-lg object-contain">
+              <button type="button" onclick="clearStudioImage(1)" class="text-[11px] text-rose-500 font-bold px-2">Hapus</button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 p-2.5 rounded-2xl border border-pink-100 bg-pink-50/20">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-full bg-pink-100 text-pink-600 font-bold text-xs flex items-center justify-center shrink-0">C</span>
+              <input type="text" id="q-opt-2" class="w-full px-3 py-2 rounded-xl border border-pink-200 text-sm focus:outline-none focus:border-pink-400 bg-white" placeholder="Pilihan C">
+              <label class="w-8 h-8 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-600 flex items-center justify-center cursor-pointer shrink-0" title="Gambar Jawaban C">
+                <i class="fas fa-camera text-xs"></i>
+                <input type="file" id="q-opt-img-input-2" accept="image/*" onchange="handleStudioImageUpload(event, 2)" class="hidden">
+              </label>
+            </div>
+            <div id="q-opt-img-box-2" class="hidden flex items-center justify-between bg-white p-1.5 rounded-xl border border-pink-100">
+              <img id="q-opt-img-prev-2" src="" class="h-12 rounded-lg object-contain">
+              <button type="button" onclick="clearStudioImage(2)" class="text-[11px] text-rose-500 font-bold px-2">Hapus</button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 p-2.5 rounded-2xl border border-pink-100 bg-pink-50/20">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-full bg-pink-100 text-pink-600 font-bold text-xs flex items-center justify-center shrink-0">D</span>
+              <input type="text" id="q-opt-3" class="w-full px-3 py-2 rounded-xl border border-pink-200 text-sm focus:outline-none focus:border-pink-400 bg-white" placeholder="Pilihan D">
+              <label class="w-8 h-8 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-600 flex items-center justify-center cursor-pointer shrink-0" title="Gambar Jawaban D">
+                <i class="fas fa-camera text-xs"></i>
+                <input type="file" id="q-opt-img-input-3" accept="image/*" onchange="handleStudioImageUpload(event, 3)" class="hidden">
+              </label>
+            </div>
+            <div id="q-opt-img-box-3" class="hidden flex items-center justify-between bg-white p-1.5 rounded-xl border border-pink-100">
+              <img id="q-opt-img-prev-3" src="" class="h-12 rounded-lg object-contain">
+              <button type="button" onclick="clearStudioImage(3)" class="text-[11px] text-rose-500 font-bold px-2">Hapus</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Kunci Jawaban Benar</label>
+            <select id="q-correct" class="w-full px-4 py-2.5 rounded-xl bg-pink-50/50 border border-pink-200 text-sm font-semibold">
+              <option value="0">Pilihan A</option>
+              <option value="1">Pilihan B</option>
+              <option value="2">Pilihan C</option>
+              <option value="3">Pilihan D</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Pembahasan Singkat</label>
+            <input type="text" id="q-explanation" class="w-full px-4 py-2.5 rounded-xl border border-pink-200 text-sm focus:outline-none" placeholder="Alasan jawaban benar...">
+          </div>
+        </div>
+
+        <button onclick="addQuestionToDraft()" class="w-full py-3 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold text-sm transition">
+          + Tambah Soal ke Daftar
+        </button>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-gray-800 text-sm">Daftar Soal (<span id="draft-count">0</span>)</h3>
+          <button onclick="clearDraft()" class="text-xs text-rose-500 hover:underline">Reset</button>
+        </div>
+        <div id="draft-questions-list" class="space-y-2 max-h-60 overflow-y-auto">
+          <p class="text-xs text-gray-400 text-center py-4">Belum ada soal ditambahkan.</p>
+        </div>
+        <button onclick="saveDraftDeck()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold text-sm shadow-md hover:opacity-95 transition">
+          <i class="fas fa-save mr-1"></i> Simpan Paket Ujian
+        </button>
+      </div>
+    </section>
+
+    <!-- Halaman Pilih Paket Soal -->
+    <section id="view-select-deck" class="hidden space-y-4">
+      <div class="flex items-center gap-3">
+        <button onclick="navigateTo('home')" class="w-10 h-10 rounded-2xl bg-white border border-pink-200 text-pink-500 flex items-center justify-center shadow-sm">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 id="select-mode-title" class="text-xl font-bold text-gray-800">Pilih Paket Soal</h2>
+          <p id="select-mode-desc" class="text-xs text-gray-500">Pilih materi yang ingin dimainkan</p>
+        </div>
+      </div>
+
+      <div id="player-setup-box" class="hidden bg-white p-5 rounded-3xl border border-pink-200 shadow-sm space-y-3"></div>
+      <div id="mode-deck-list" class="space-y-3"></div>
+    </section>
+
+    <!-- Halaman Game Ulangan Harian -->
+    <section id="view-game-uh" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-pink-100 flex items-center justify-between">
+        <button onclick="confirmExitGame()" class="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm"><i class="fas fa-times"></i></button>
+        <div class="flex-1 mx-3">
+          <div class="flex justify-between text-xs font-bold text-gray-600 mb-1">
+            <span id="uh-progress-text">Soal 1 / 5</span>
+            <span id="uh-player-badge" class="text-pink-500 truncate max-w-[120px]">Siswa</span>
+          </div>
+          <div class="w-full h-2.5 bg-pink-100 rounded-full overflow-hidden">
+            <div id="uh-progress-bar" class="h-full bg-gradient-to-r from-pink-400 to-rose-500 transition-all duration-300" style="width: 20%"></div>
+          </div>
+        </div>
+        <div class="bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-2xl flex items-center gap-1.5 text-rose-600 font-bold text-sm">
+          <i class="fas fa-clock"></i>
+          <span id="uh-timer">15:00</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-pink-100 space-y-5">
+        <div id="uh-question-image-box" class="hidden text-center">
+          <img id="uh-question-image" src="" alt="Gambar Soal" class="max-h-52 mx-auto rounded-2xl border border-pink-200 object-contain bg-pink-50/30 p-1.5">
+        </div>
+        <p id="uh-question-text" class="text-base sm:text-lg font-bold text-gray-800 leading-relaxed">Memuat pertanyaan...</p>
+        <div id="uh-options-container" class="space-y-2.5"></div>
+        <div id="uh-explanation-box" class="hidden p-4 rounded-2xl bg-pink-50 border border-pink-200 text-xs text-gray-700 space-y-1">
+          <p class="font-bold text-pink-600"><i class="fas fa-lightbulb"></i> Pembahasan:</p>
+          <p id="uh-explanation-text"></p>
+        </div>
+        <button id="uh-next-btn" onclick="nextUHQuestion()" class="hidden w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold text-sm shadow-md">
+          Soal Berikutnya <i class="fas fa-arrow-right ml-1"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Game 1: Tarik Tambang -->
+    <section id="view-game-tugofwar" class="hidden fixed inset-0 bg-pink-50 z-40 flex flex-col justify-between p-3 select-none">
+      <div class="flex-1 bg-white rounded-3xl p-3.5 shadow-md border-2 border-purple-200 flex flex-col justify-between rotate-180-player">
+        <div class="flex justify-between items-center">
+          <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">Pemain 2 (Ungu)</span>
+          <span id="tow-p2-status" class="text-xs font-bold text-purple-500">Tarik ke arahmu!</span>
+        </div>
+        <p id="tow-p2-question" class="text-sm font-bold text-gray-800 text-center my-1 line-clamp-2">Pertanyaan...</p>
+        <div id="tow-p2-options" class="grid grid-cols-2 gap-2"></div>
+      </div>
+
+      <div class="py-2 px-3 my-1.5 bg-white rounded-2xl border-2 border-pink-300 shadow-sm space-y-1.5">
+        <div class="flex items-center justify-between text-[10px] font-bold">
+          <button onclick="confirmExitGame()" class="w-6 h-6 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center"><i class="fas fa-times"></i></button>
+          <span class="text-purple-600">⬆️ WILAYAH PEMAIN 2</span>
+          <span class="text-pink-600">WILAYAH PEMAIN 1 ⬇️</span>
+        </div>
+        <div class="relative h-6 bg-amber-100 rounded-full border border-amber-300 flex items-center px-2 overflow-hidden">
+          <div class="absolute left-6 inset-y-0 w-0.5 bg-purple-500 border-dashed"></div>
+          <div class="absolute right-6 inset-y-0 w-0.5 bg-pink-500 border-dashed"></div>
+          <div class="w-full h-2 bg-amber-600 rounded-full"></div>
+          <div id="tow-ribbon" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-all duration-300 flex flex-col items-center" style="left: 50%;">
+            <div class="w-5 h-5 bg-red-500 rotate-45 rounded-sm border-2 border-white shadow-md"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-1 bg-white rounded-3xl p-3.5 shadow-md border-2 border-pink-200 flex flex-col justify-between">
+        <div class="flex justify-between items-center">
+          <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-xs font-bold">Pemain 1 (Pink)</span>
+          <span id="tow-p1-status" class="text-xs font-bold text-pink-500">Tarik ke arahmu!</span>
+        </div>
+        <p id="tow-p1-question" class="text-sm font-bold text-gray-800 text-center my-1 line-clamp-2">Pertanyaan...</p>
+        <div id="tow-p1-options" class="grid grid-cols-2 gap-2"></div>
+      </div>
+    </section>
+
+    <!-- Game 2: Who is the Impostor? -->
+    <section id="view-game-impostor" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-purple-200 flex items-center justify-between">
+        <button onclick="confirmExitGame()" class="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm"><i class="fas fa-times"></i></button>
+        <div class="text-center">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-purple-600">🕵️ WHO IS THE IMPOSTOR?</span>
+          <h3 id="imp-phase-title" class="text-base font-bold text-gray-800">Fase Rahasia</h3>
+        </div>
+        <span id="imp-progress-badge" class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">1/4</span>
+      </div>
+
+      <div id="imp-pass-screen" class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl p-8 text-center text-white shadow-lg space-y-4">
+        <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto text-4xl">
+          <i class="fas fa-user-secret"></i>
+        </div>
+        <h3 class="text-2xl font-bold">Oper HP ke <span id="imp-next-player">Pemain 1</span>!</h3>
+        <p class="text-xs text-purple-100">Jangan biarkan teman lain mengintip layar HP saat kamu membuka peranmu!</p>
+        <button onclick="revealImpostorTurn()" class="w-full py-4 rounded-2xl bg-white text-purple-600 font-bold text-sm shadow-md">
+          Lihat Peran & Jawab Soal
+        </button>
+      </div>
+
+      <div id="imp-question-screen" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-purple-100 space-y-4">
+        <div id="imp-role-banner" class="p-3 rounded-2xl text-center font-bold text-xs"></div>
+        <div id="imp-question-image-box" class="hidden text-center">
+          <img id="imp-question-image" src="" alt="Gambar Soal" class="max-h-44 mx-auto rounded-2xl border border-purple-200 object-contain p-1">
+        </div>
+        <p id="imp-question-text" class="text-base font-bold text-gray-800">Pertanyaan...</p>
+        <div id="imp-options-container" class="space-y-2.5"></div>
+      </div>
+
+      <div id="imp-voting-screen" class="hidden bg-white rounded-3xl p-6 shadow-sm border-2 border-purple-200 space-y-4">
+        <div class="text-center space-y-1">
+          <span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">🗣️ DISKUSI 30 DETIK & VOTING</span>
+          <h3 class="text-lg font-bold text-gray-800">Siapa yang Jawabannya Paling Mencurigakan?</h3>
+          <p class="text-xs text-gray-500">Soal Asli: <b id="imp-real-question-reveal" class="text-gray-700"></b></p>
+        </div>
+        <div id="imp-answers-summary" class="space-y-2 bg-purple-50/60 p-3 rounded-2xl border border-purple-100"></div>
+        <p class="text-xs font-bold text-center text-purple-600">Ketuk nama pemain yang kalian tuduh sebagai Impostor:</p>
+        <div id="imp-vote-buttons" class="grid grid-cols-2 gap-2.5"></div>
+      </div>
+    </section>
+
+    <!-- Game 3: Tower Defense -->
+    <section id="view-game-tower" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-indigo-200 flex items-center justify-between">
+        <button onclick="confirmExitGame()" class="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm"><i class="fas fa-times"></i></button>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-indigo-600">HP Benteng:</span>
+          <span id="td-castle-hp" class="text-sm">❤️❤️❤️</span>
+        </div>
+        <span id="td-wave-badge" class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">Monster 1/5</span>
+      </div>
+
+      <div class="bg-gradient-to-b from-sky-100 via-pink-50 to-emerald-100 rounded-3xl p-5 border-2 border-indigo-200 relative overflow-hidden h-40 flex flex-col justify-between">
+        <div class="flex justify-between items-center text-[11px] font-bold text-gray-600">
+          <span>🏰 Benteng Sekolah</span>
+          <span id="td-monster-name" class="bg-rose-500 text-white px-2.5 py-0.5 rounded-full">👾 Monster Malas</span>
+        </div>
+        <div class="relative h-14 flex items-center">
+          <div class="text-4xl z-10">🏰</div>
+          <div id="td-cannonball" class="hidden absolute left-12 text-2xl transition-all duration-300">🌈💥</div>
+          <div id="td-monster-sprite" class="absolute transition-all duration-300 flex flex-col items-center" style="left: 85%;">
+            <span class="text-4xl animate-bounce">👾</span>
+            <div class="w-12 h-1.5 bg-gray-300 rounded-full overflow-hidden mt-1">
+              <div id="td-monster-bar" class="h-full bg-rose-500" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-center text-gray-500 font-medium">Jawab benar untuk menembakkan Meriam Pelangi! Salah = Monster berlari makin dekat!</p>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-4">
+        <div id="td-question-image-box" class="hidden text-center">
+          <img id="td-question-image" src="" alt="Gambar Soal" class="max-h-40 mx-auto rounded-2xl border border-indigo-200 object-contain p-1">
+        </div>
+        <p id="td-question-text" class="text-base font-bold text-gray-800">Pertanyaan...</p>
+        <div id="td-options-container" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- Game 4: Spin & Dare -->
+    <section id="view-game-spindare" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-amber-200 flex items-center justify-between">
+        <button onclick="confirmExitGame()" class="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm"><i class="fas fa-times"></i></button>
+        <span id="sd-turn-badge" class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">Giliran: Pemain 1</span>
+        <span id="sd-q-counter" class="text-xs font-bold text-gray-500">Soal 1/5</span>
+      </div>
+
+      <div id="sd-scoreboard" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+
+      <div id="sd-wheel-screen" class="bg-white rounded-3xl p-6 shadow-sm border-2 border-amber-200 text-center space-y-4">
+        <h3 class="text-lg font-bold text-gray-800">🎡 Putar Roda Keberuntungan!</h3>
+        <div class="relative w-48 h-48 mx-auto flex items-center justify-center">
+          <div class="absolute -top-3 z-20 text-rose-600 text-2xl"><i class="fas fa-caret-down"></i></div>
+          <div id="sd-wheel-circle" class="w-44 h-44 rounded-full border-4 border-pink-400 shadow-lg wheel-transition flex items-center justify-center relative overflow-hidden" style="background: conic-gradient(#F472B6 0deg 90deg, #60A5FA 90deg 180deg, #FBBF24 180deg 270deg, #F87171 270deg 360deg);">
+            <div class="w-12 h-12 bg-white rounded-full shadow-md flex items-center justify-center text-pink-500 font-bold text-xs z-10">SPIN</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap justify-center gap-2 text-[10px] font-bold">
+          <span class="px-2 py-1 rounded-lg bg-pink-100 text-pink-700">✨ Poin x2</span>
+          <span class="px-2 py-1 rounded-lg bg-blue-100 text-blue-700">🔄 Tukar Skor</span>
+          <span class="px-2 py-1 rounded-lg bg-amber-100 text-amber-700">🎤 Tantangan Lucu</span>
+          <span class="px-2 py-1 rounded-lg bg-red-100 text-red-700">💣 Bom -50</span>
+        </div>
+        <button id="btn-spin-wheel" onclick="spinWheelAction()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-pink-500 text-white font-bold text-sm shadow-md">
+          Putar Roda Sekarang!
+        </button>
+      </div>
+
+      <div id="sd-question-screen" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-pink-100 space-y-4">
+        <div id="sd-effect-banner" class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-center text-xs font-bold text-amber-800"></div>
+        <div id="sd-question-image-box" class="hidden text-center">
+          <img id="sd-question-image" src="" alt="Gambar Soal" class="max-h-40 mx-auto rounded-2xl border border-amber-200 object-contain p-1">
+        </div>
+        <p id="sd-question-text" class="text-base font-bold text-gray-800">Pertanyaan...</p>
+        <div id="sd-options-container" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+    <!-- Game 5: Tebak Kata Sakura -->
+    <section id="view-game-sakura" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-pink-200 flex items-center justify-between">
+        <button onclick="confirmExitGame()" class="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm"><i class="fas fa-times"></i></button>
+        <span id="sakura-progress" class="text-xs font-bold text-pink-600">Kata 1 / 5</span>
+        <span id="sakura-score" class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-xs font-bold">Skor: 0</span>
+      </div>
+
+      <div class="bg-gradient-to-b from-pink-100 to-white rounded-3xl p-5 border border-pink-200 text-center space-y-3">
+        <div class="flex justify-center items-center gap-1.5 text-2xl" id="sakura-petals-display"></div>
+        <p class="text-[11px] text-gray-500">Jaga kelopak bunga sakura agar tidak gugur semua!</p>
+
+        <div class="bg-white p-4 rounded-2xl border border-pink-100 shadow-sm">
+          <span class="text-[10px] font-bold text-pink-500 uppercase">PETUNJUK SOAL:</span>
+          <div id="sakura-question-image-box" class="hidden my-2 text-center">
+            <img id="sakura-question-image" src="" alt="Gambar Clue" class="max-h-36 mx-auto rounded-xl border border-pink-200 object-contain">
+          </div>
+          <p id="sakura-clue-text" class="text-sm font-bold text-gray-800 mt-1">Clue pertanyaan...</p>
+        </div>
+
+        <div id="sakura-word-slots" class="flex flex-wrap justify-center gap-1.5 pt-2"></div>
+      </div>
+
+      <div id="sakura-keyboard" class="bg-white p-3 rounded-3xl border border-pink-100 shadow-sm grid grid-cols-7 sm:grid-cols-9 gap-1.5"></div>
+    </section>
+
+    <!-- Game 6: Quiz Runner -->
+    <section id="view-game-runner" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-emerald-200 flex items-center justify-between">
+        <button onclick="confirmExitGame()" class="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm"><i class="fas fa-times"></i></button>
+        <span id="run-lives" class="text-sm">❤️❤️❤️</span>
+        <span id="run-score" class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">Skor: 0</span>
+      </div>
+
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-emerald-200 text-center">
+        <span id="run-q-badge" class="text-[10px] font-bold text-emerald-600 uppercase">Soal 1 / 5 • Ketuk Jalur Jawaban Benar!</span>
+        <div id="run-question-image-box" class="hidden my-1.5 text-center">
+          <img id="run-question-image" src="" alt="Gambar Soal" class="max-h-28 mx-auto rounded-xl border border-emerald-200 object-contain">
+        </div>
+        <p id="run-question-text" class="text-sm sm:text-base font-bold text-gray-800 mt-1">Pertanyaan...</p>
+      </div>
+
+      <div class="bg-gradient-to-b from-emerald-100 to-teal-50 rounded-3xl p-3 border-2 border-emerald-300 relative h-80 flex flex-col justify-between overflow-hidden">
+        <div id="run-gates-row" class="grid grid-cols-4 gap-1.5 transition-all duration-100" style="transform: translateY(0px);"></div>
+
+        <div class="grid grid-cols-4 gap-1.5 h-16 items-end relative z-10">
+          <div onclick="setRunnerLane(0)" class="h-full rounded-2xl bg-white/60 border border-emerald-200 flex items-center justify-center cursor-pointer relative">
+            <span class="text-[10px] font-bold text-emerald-700 absolute top-1">Jalur A</span>
+            <div id="runner-char-0" class="text-3xl animate-run">🐰</div>
+          </div>
+          <div onclick="setRunnerLane(1)" class="h-full rounded-2xl bg-white/60 border border-emerald-200 flex items-center justify-center cursor-pointer relative">
+            <span class="text-[10px] font-bold text-emerald-700 absolute top-1">Jalur B</span>
+            <div id="runner-char-1" class="hidden text-3xl animate-run">🐰</div>
+          </div>
+          <div onclick="setRunnerLane(2)" class="h-full rounded-2xl bg-white/60 border border-emerald-200 flex items-center justify-center cursor-pointer relative">
+            <span class="text-[10px] font-bold text-emerald-700 absolute top-1">Jalur C</span>
+            <div id="runner-char-2" class="hidden text-3xl animate-run">🐰</div>
+          </div>
+          <div onclick="setRunnerLane(3)" class="h-full rounded-2xl bg-white/60 border border-emerald-200 flex items-center justify-center cursor-pointer relative">
+            <span class="text-[10px] font-bold text-emerald-700 absolute top-1">Jalur D</span>
+            <div id="runner-char-3" class="hidden text-3xl animate-run">🐰</div>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-center text-gray-500">Ketuk <b>Jalur A, B, C, atau D</b> untuk memindahkan kelinci pelari ke gerbang yang benar!</p>
+    </section>
+
+    <!-- Halaman Flashcard -->
+    <section id="view-game-flashcard" class="hidden space-y-5">
+      <div class="flex items-center justify-between">
+        <button onclick="navigateTo('home')" class="w-10 h-10 rounded-2xl bg-white border border-pink-200 text-pink-500 flex items-center justify-center shadow-sm">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <span id="fc-counter" class="text-sm font-bold text-pink-600 bg-white px-4 py-1.5 rounded-full border border-pink-100">Kartu 1 / 5</span>
+        <div class="w-10"></div>
+      </div>
+
+      <div onclick="flipFlashcard()" class="perspective-1000 h-80 cursor-pointer">
+        <div id="flashcard-inner" class="relative w-full h-full transform-style-3d shadow-lg rounded-3xl">
+          <div class="absolute inset-0 backface-hidden bg-white rounded-3xl p-6 border-2 border-pink-200 flex flex-col items-center justify-center text-center overflow-y-auto">
+            <span class="px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-xs font-bold mb-3">PERTANYAAN</span>
+            <img id="fc-front-image" src="" alt="Gambar Kartu" class="hidden max-h-32 rounded-xl border border-pink-100 object-contain mb-2">
+            <p id="fc-front-text" class="text-lg font-bold text-gray-800">Pertanyaan di sini</p>
+            <span class="text-xs text-gray-400 mt-4"><i class="fas fa-sync-alt mr-1"></i> Ketuk kartu untuk melihat jawaban</span>
+          </div>
+          <div class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-br from-pink-400 to-rose-400 text-white rounded-3xl p-6 flex flex-col items-center justify-center text-center overflow-y-auto">
+            <span class="px-3 py-1 bg-white/25 rounded-full text-xs font-bold mb-3">JAWABAN BENAR</span>
+            <img id="fc-back-image" src="" alt="Gambar Jawaban" class="hidden max-h-28 rounded-xl bg-white p-1 object-contain mb-2">
+            <p id="fc-back-answer" class="text-xl font-bold mb-2">Jawaban</p>
+            <p id="fc-back-exp" class="text-xs text-pink-50">Penjelasan singkat</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="nextFlashcard(false)" class="flex-1 py-4 rounded-2xl bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold text-sm transition flex items-center justify-center gap-2">
+          <i class="fas fa-rotate-left"></i> Ulangi Nanti
+        </button>
+        <button onclick="nextFlashcard(true)" class="flex-1 py-4 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+          <i class="fas fa-check"></i> Sudah Paham!
+        </button>
+      </div>
+    </section>
+
+    <!-- Halaman Riwayat Belajar -->
+    <section id="view-history" class="hidden space-y-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">Riwayat & Progres Belajar 📊</h2>
+          <p class="text-xs text-gray-500">Tersimpan otomatis di memori lokal HP</p>
+        </div>
+        <button onclick="clearHistory()" class="text-xs text-rose-500 hover:underline font-semibold">Hapus Riwayat</button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2.5">
+        <div class="bg-white p-3.5 rounded-3xl border border-pink-100 text-center shadow-sm">
+          <span class="text-xs text-gray-400 block">Total Main</span>
+          <span id="stat-total-played" class="text-xl font-bold text-pink-600">0</span>
+        </div>
+        <div class="bg-white p-3.5 rounded-3xl border border-pink-100 text-center shadow-sm">
+          <span class="text-xs text-gray-400 block">Rata-rata UH</span>
+          <span id="stat-avg-score" class="text-xl font-bold text-teal-600">0</span>
+        </div>
+        <div class="bg-white p-3.5 rounded-3xl border border-pink-100 text-center shadow-sm">
+          <span class="text-xs text-gray-400 block">Bank Soal</span>
+          <span id="stat-total-decks" class="text-xl font-bold text-purple-600">0</span>
+        </div>
+      </div>
+
+      <div id="history-list-container" class="space-y-2.5"></div>
+    </section>
+
+    <!-- Halaman Hasil & Sertifikat -->
+    <section id="view-result" class="hidden space-y-5">
+      <div class="bg-white rounded-3xl p-6 shadow-md border-2 border-pink-200 text-center space-y-4">
+        <div class="w-20 h-20 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto text-4xl animate-float">
+          <i class="fas fa-trophy"></i>
+        </div>
+        <div>
+          <h2 id="result-title" class="text-2xl font-bold text-gray-800">Permainan Selesai!</h2>
+          <p id="result-subtitle" class="text-xs text-gray-500">Kerja bagus! Berikut adalah hasil pencapaianmu.</p>
+        </div>
+
+        <div id="result-score-box" class="bg-pink-50 rounded-2xl p-4 border border-pink-100">
+          <span class="text-xs text-pink-500 font-bold uppercase">Hasil Akhir</span>
+          <div id="result-score" class="text-4xl sm:text-5xl font-bold text-pink-600 my-1">100</div>
+          <p id="result-stats" class="text-xs text-gray-600">Benar 5 dari 5 soal</p>
+        </div>
+
+        <div id="result-leaderboard" class="hidden text-left space-y-2 bg-pink-50/50 p-4 rounded-2xl border border-pink-100">
+          <h4 class="text-xs font-bold text-pink-600 uppercase tracking-wider mb-2"><i class="fas fa-ranking-star mr-1"></i> Klasemen Peringkat</h4>
+          <div id="leaderboard-rows" class="space-y-2"></div>
+        </div>
+
+        <canvas id="certificate-canvas" width="800" height="500" class="hidden"></canvas>
+
+        <div class="space-y-2.5 pt-2">
+          <button id="btn-download-cert" onclick="downloadCertificate()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold text-sm shadow-md hover:opacity-95 transition flex items-center justify-center gap-2">
+            <i class="fas fa-award"></i> Unduh Bukti Nilai (Sertifikat)
+          </button>
+          <button onclick="navigateTo('home')" class="w-full py-3.5 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold text-sm transition">
+            Kembali ke Beranda
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Halaman Live Class Arena (Lobby, Host, Siswa) -->
+    <section id="view-live-lobby" class="hidden space-y-5">
+      <div class="flex items-center gap-3">
+        <button onclick="navigateTo('home')" class="w-10 h-10 rounded-2xl bg-white border border-pink-200 text-pink-500 flex items-center justify-center shadow-sm">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">Live Class Arena 🚀</h2>
+          <p class="text-xs text-gray-500">Main serentak satu kelas dari HP masing-masing</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-white rounded-3xl p-5 shadow-sm border-2 border-pink-200 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-pink-100 text-pink-500 flex items-center justify-center text-xl"><i class="fas fa-user-graduate"></i></div>
+          <h3 class="font-bold text-gray-800 text-base">Gabung sebagai Siswa</h3>
+          <p class="text-xs text-gray-500">Masukkan 6 digit PIN ruangan dari layar guru.</p>
+          <input type="text" id="live-join-name" class="w-full px-4 py-2.5 rounded-2xl bg-pink-50/50 border border-pink-200 text-sm focus:outline-none focus:border-pink-400" placeholder="Nama Panggilanmu">
+          <input type="number" id="live-join-pin" class="w-full px-4 py-2.5 rounded-2xl bg-pink-50/50 border border-pink-200 text-center font-bold tracking-widest text-base focus:outline-none focus:border-pink-400" placeholder="PIN (6 Angka)">
+          <button id="btn-join-live" onclick="joinLiveRoom()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold text-sm shadow-md">Masuk ke Kelas</button>
+        </div>
+
+        <div id="live-host-card" class="bg-white rounded-3xl p-5 shadow-sm border-2 border-fuchsia-200 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-fuchsia-100 text-fuchsia-600 flex items-center justify-center text-xl"><i class="fas fa-chalkboard-user"></i></div>
+          <h3 class="font-bold text-gray-800 text-base">Host sebagai Guru</h3>
+          <p class="text-xs text-gray-500">Pilih paket soal untuk membuat PIN Ruangan kelas.</p>
+          <select id="live-host-deck" class="w-full px-3 py-2.5 rounded-2xl bg-fuchsia-50/50 border border-fuchsia-200 text-sm font-medium focus:outline-none"></select>
+          <button id="btn-create-live" onclick="createLiveRoom()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white font-bold text-sm shadow-md">Buat PIN Ruangan</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-live-host" class="hidden space-y-4">
+      <div class="bg-gradient-to-r from-fuchsia-500 to-pink-500 rounded-3xl p-5 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-center sm:text-left">
+          <span class="text-xs uppercase tracking-wider text-pink-100 font-bold">PIN RUANGAN KELAS</span>
+          <div id="host-room-pin" class="text-4xl font-extrabold tracking-widest mt-0.5 select-all">------</div>
+          <p id="host-deck-title" class="text-xs text-pink-100 mt-1">Paket Soal</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-start-live-match" onclick="hostStartMatch()" class="px-5 py-3 rounded-2xl bg-white text-fuchsia-600 font-bold text-sm shadow-md hover:bg-pink-50 transition">
+            <i class="fas fa-play mr-1"></i> Mulai Kuis!
+          </button>
+          <button onclick="closeLiveRoom()" class="px-4 py-3 rounded-2xl bg-black/20 hover:bg-black/30 text-white font-bold text-sm transition">Tutup</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-pink-100 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-gray-800 text-sm"><i class="fas fa-ranking-star text-pink-500 mr-1"></i> Live Leaderboard (<span id="host-player-count">0</span> Siswa)</h3>
+          <span id="host-match-status" class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">Menunggu Siswa...</span>
+        </div>
+        <div id="host-players-list" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <section id="view-live-student" class="hidden space-y-4">
+      <div id="student-waiting-box" class="bg-white rounded-3xl p-8 text-center border-2 border-pink-200 shadow-sm space-y-4">
+        <div class="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto text-3xl animate-bounce"><i class="fas fa-hourglass-half"></i></div>
+        <h3 class="text-xl font-bold text-gray-800">Kamu Sudah Masuk Kelas! 🎉</h3>
+        <p class="text-sm text-gray-600">Halo <b id="student-live-name" class="text-pink-600">Siswa</b>, tunggu guru menekan tombol <b>Mulai Kuis</b> di layar depan ya!</p>
+        <button onclick="leaveLiveStudent()" class="px-5 py-2.5 rounded-2xl bg-gray-100 text-gray-600 text-xs font-bold">Keluar Ruangan</button>
+      </div>
+
+      <div id="student-play-box" class="hidden space-y-4">
+        <div class="bg-white rounded-3xl p-4 shadow-sm border border-pink-100 flex items-center justify-between">
+          <div>
+            <span id="live-q-progress" class="text-xs font-bold text-gray-600">Soal 1 / 5</span>
+            <div class="w-32 h-2 bg-pink-100 rounded-full mt-1 overflow-hidden">
+              <div id="live-q-bar" class="h-full bg-fuchsia-500 transition-all" style="width: 20%"></div>
+            </div>
+          </div>
+          <div class="bg-fuchsia-50 border border-fuchsia-200 px-3.5 py-1.5 rounded-2xl text-fuchsia-600 font-bold text-sm">
+            Skor: <span id="live-my-score">0</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-pink-100 space-y-4">
+          <div id="live-q-image-box" class="hidden text-center">
+            <img id="live-q-image" src="" alt="Gambar Soal" class="max-h-44 mx-auto rounded-2xl border border-pink-200 object-contain p-1">
+          </div>
+          <p id="live-q-text" class="text-base sm:text-lg font-bold text-gray-800">Pertanyaan...</p>
+          <div id="live-q-options" class="space-y-2.5"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== NAVIGASI BAWAH ==================== -->
+  <nav id="bottom-nav" class="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-md border-t border-pink-100 px-4 py-2.5 z-30">
+    <div class="max-w-md mx-auto flex justify-around items-center">
+      <button onclick="navigateTo('home')" id="nav-home" class="flex flex-col items-center gap-1 text-pink-500 font-bold text-xs">
+        <i class="fas fa-home text-lg"></i><span>Beranda</span>
+      </button>
+      <button onclick="navigateTo('ai-generator')" id="nav-ai" class="flex flex-col items-center gap-1 text-gray-400 hover:text-pink-500 font-medium text-xs transition">
+        <i class="fas fa-wand-magic-sparkles text-lg"></i><span>Soal AI</span>
+      </button>
+      <button onclick="navigateTo('teacher-studio')" id="nav-studio" class="flex flex-col items-center gap-1 text-gray-400 hover:text-pink-500 font-medium text-xs transition">
+        <i class="fas fa-plus-square text-lg"></i><span>Studio Guru</span>
+      </button>
+      <button onclick="navigateTo('history')" id="nav-history" class="flex flex-col items-center gap-1 text-gray-400 hover:text-pink-500 font-medium text-xs transition">
+        <i class="fas fa-chart-line text-lg"></i><span>Riwayat</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hubungkan logika JavaScript -->
+  <script src="achievquiz_app.js"></script>
+</body>
+</html>
